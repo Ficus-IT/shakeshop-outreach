@@ -383,6 +383,12 @@ async function doScan() {
       nextUrl = pageData['@odata.nextLink'] || null;
     }
     console.log('Search complete. Total emails from supplier:', allEmails.length);
+    allEmails.forEach(function(e, i) {
+      var from = e.from && e.from.emailAddress ? e.from.emailAddress.address : 'unknown';
+      var to = (e.toRecipients || []).map(function(r) { return r.emailAddress.address; }).join(', ') || '(none)';
+      var date = e.receivedDateTime ? new Date(e.receivedDateTime).toLocaleDateString('en-CA') : 'unknown';
+      console.log('Email ' + (i+1) + ' | Date: ' + date + ' | From: ' + from + ' | To: ' + to);
+    });
     var data = { value: allEmails };
 
 
