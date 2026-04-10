@@ -97,7 +97,7 @@
   </div>
   <div class="card" id="scanCard">
     <div class="card-title"><div class="step-dot">1</div> Scan inbox for referral emails</div>
-    <p style="font-size:13px;color:#666;margin-bottom:14px;">Finds emails from <strong><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="3b52555d547b525555544d5a4f524d5e164d5e555f52555c15585456">[email&#160;protected]</a></strong> where you are CC'd, then extracts the prospect from the To: field.</p>
+    <p style="font-size:13px;color:#666;margin-bottom:14px;">Finds emails from <strong>info&#64;innovative-vending.com</strong> where you are CC'd, then extracts the prospect from the To: field.</p>
     <button class="btn-green" id="scanBtn">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       Scan for referral emails
@@ -117,7 +117,7 @@
       <div><label>Your title</label><input type="text" id="senderTitle" value="VP Sales &amp; Marketing"></div>
     </div>
     <div class="field-row">
-      <div><label>Your email</label><input type="text" id="senderEmail" value="badr.zindine@shake-shop.com"></div>
+      <div><label>Your email</label><input type="text" id="senderEmail" value="badr.zindine&#64;shake-shop.com"></div>
       <div><label>Your phone</label><input type="text" id="senderPhone" value="438-409-4641"></div>
     </div>
     <button class="btn-green" id="generateBtn" style="margin-top:6px;">
@@ -150,7 +150,7 @@
   </div>
 </div>
 <div class="toast" id="toast"></div>
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+<script>
 /*! @azure/msal-browser v3.28.0 2024-12-12 */
 "use strict";!function(e,t){"object"==typeof exports&&"undefined"!=typeof module?t(exports):"function"==typeof define&&define.amd?define(["exports"],t):t((e="undefined"!=typeof globalThis?globalThis:e||self).msal={})}(this,(function(e){
 /*! @azure/msal-common v14.16.0 2024-12-12 */
@@ -225,7 +225,7 @@ const ao="|";function so(e){const{skus:t,libraryName:r,libraryVersion:n,extensio
 const CLIENT_ID = '487b46a7-0a5f-4d72-aae6-87bccffe31f1';
 const TENANT_ID = '57d066ea-6104-40dc-b206-0db30640b493';
 const MY_DOMAIN = 'shake-shop.ca';
-const SUPPLIER = 'info@innovative-vending.com';
+const SUPPLIER = 'info&#64;innovative-vending.com';
 const EXCLUDED = ['innovative-vending.com', 'shake-shop.com', 'shake-shop.ca'];
 const SCOPES = ['Mail.Read', 'Mail.Send', 'User.Read'];
 
@@ -291,12 +291,18 @@ async function getToken() {
 }
 
 async function init() {
+  console.log('init() called');
+  console.log('msal global:', typeof msal);
+  console.log('msal.PublicClientApplication:', typeof msal.PublicClientApplication);
   try {
+    console.log('Creating MSAL instance...');
     msalInstance = new msal.PublicClientApplication(msalConfig);
+    console.log('MSAL instance created:', msalInstance);
+    console.log('Handling redirect...');
+    const res = await msalInstance.handleRedirectPromise();
+    console.log('Redirect handled:', res);
     $('initMsg').style.display = 'none';
     $('signInBtn').disabled = false;
-
-    const res = await msalInstance.handleRedirectPromise();
     if (res) {
       onSignedIn(res.account);
     } else {
@@ -304,8 +310,8 @@ async function init() {
       if (accs.length) onSignedIn(accs[0]);
     }
   } catch(e) {
-    $('initMsg').textContent = 'Auth error: ' + e.message;
     console.error('MSAL init error:', e);
+    $('initMsg').textContent = 'Auth error: ' + e.message;
   }
 }
 
