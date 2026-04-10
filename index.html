@@ -166,7 +166,7 @@ const REDIRECT_URI = 'https://ficus-it.github.io/shakeshop-outreach/';
 const SCOPES = 'Mail.Read Mail.Send User.Read';
 const SUPPLIER = 'info@innovative-vending.com';
 const MY_DOMAIN = 'shake-shop.com';
-const EXCLUDED = ['innovative-vending.com', 'shake-shop.com', 'shake-shop.ca'];
+const EXCLUDED = ['innovative-vending.com', 'shake-shop.ca'];
 
 const BROCHURE = "Shake Shop is Canada's exclusive distributor of smart protein shake and smoothie vending machines. THE MACHINE: Built-in ice maker (no plumbing), Premium Diesel Whey Isolate protein up to 27g per shake, freeze-dried fruit powders, stevia-sweetened, no artificial flavours, cashless payments (Apple Pay / Google Pay / Interac), smart analytics, remote monitoring, auto-cleaning. THREE BUSINESS MODELS: 1. Private Label - $37,000 CAD. Own brand, 100% revenue, ROI 10-12 months. 2. Shake Shop Operator - Own machine under our brand. Discounted supplies, tech support, marketing. Royalties: $0.50/shake + 2% marketing. 3. Host Model - Zero cost. We install and run it. You earn 10-20% monthly commission by traffic level. PROFITS (30 shakes/day at $8): Private Label ~$61k/yr, Operator ~$55k/yr, Host $8,640-$17,280/yr. Gross margin up to 200%. MARKET: Canadian vending US$2.4B+, smart vending to US$3.58B by 2030, smoothie market doubling to US$571M by 2030.";
 
@@ -351,7 +351,7 @@ async function doScan() {
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span> Scanning...';
   $('emailList').innerHTML = '';
- 
+
   try {
     // No $filter + $orderby together - fetch recent messages and filter client-side
     var url = 'https://graph.microsoft.com/v1.0/me/messages?$select=id,subject,from,toRecipients,ccRecipients,receivedDateTime&$top=50&$orderby=receivedDateTime desc';
@@ -363,8 +363,6 @@ async function doScan() {
       setTimeout(function() { location.reload(); }, 2000);
       return;
     }
-
-     toast('emailList: ' resp.json(), true);
 
     var data = await resp.json();
     if (!resp.ok) throw new Error(data.error ? data.error.message : 'Graph API error');
