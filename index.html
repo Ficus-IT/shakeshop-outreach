@@ -341,7 +341,6 @@ function findProspect(toList) {
 }
 
 async function doScan() {
-  // Try to restore token from localStorage if not in memory
   if (!accessToken) {
     var stored = localStorage.getItem('ms_access_token');
     var expiry = localStorage.getItem('ms_token_expiry');
@@ -350,103 +349,96 @@ async function doScan() {
     }
   }
   if (!accessToken) { toast('Session expired. Please sign in again.', true); return; }
+
   var btn = $('scanBtn');
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span> Scanning...';
   $('emailList').innerHTML = '';
 
   try {
-    // Use $search to find only emails from the supplier - fast, no need to scan all emails
     var allEmails = [];
     var nextUrl = 'https://graph.microsoft.com/v1.0/me/messages'
       + '?$search="from:' + SUPPLIER + '"'
       + '&$select=id,subject,from,toRecipients,ccRecipients,receivedDateTime'
       + '&$top=50';
-    var pageNum = 0;
+
     while (nextUrl) {
-      pageNum++;
-      console.log('Fetching page ' + pageNum);
-      var pageResp = await fetch(nextUrl, {
-        headers: {
-          Authorization: 'Bearer ' + accessToken,
-          ConsistencyLevel: 'eventual'
-        }
+      console.log('Fetching:', nextUrl);
+      var r = await fetch(nextUrl, {
+        headers: { Authorization: 'Bearer ' + accessToken, ConsistencyLevel: 'eventual' }
       });
-      if (pageResp.status === 401) {
+      if (r.status === 401) {
         localStorage.removeItem('ms_access_token');
         toast('Session expired. Please sign in again.', true);
         setTimeout(function() { location.reload(); }, 2000);
         return;
       }
-      var pageData = await pageResp.json();
-      if (!pageResp.ok) throw new Error(pageData.error ? pageData.error.message : 'Graph API error');
-      var pageEmails = pageData.value || [];
-      allEmails = allEmails.concat(pageEmails);
-      console.log('Page ' + pageNum + ': got ' + pageEmails.length + ' emails, total so far: ' + allEmails.length);
-      nextUrl = pageData['@odata.nextLink'] || null;
+      var json = await r.json();
+      if (!r.ok) throw new Error(json.error ? json.error.message : 'Graph API error');
+      allEmails = allEmails.concat(json.value || []);
+      console.log('Total so far:', allEmails.length);
+      nextUrl = json['@odata.nextLink'] || null;
     }
-    console.log('Search complete. Total emails from supplier:', allEmails.length);
+
+    console.log('Done fetching. Total:', allEmails.length);
     allEmails.forEach(function(e, i) {
       var from = e.from && e.from.emailAddress ? e.from.emailAddress.address : 'unknown';
       var to = (e.toRecipients || []).map(function(r) { return r.emailAddress.address; }).join(', ') || '(none)';
       var date = e.receivedDateTime ? new Date(e.receivedDateTime).toLocaleDateString('en-CA') : 'unknown';
       console.log('Email ' + (i+1) + ' | Date: ' + date + ' | From: ' + from + ' | To: ' + to);
     });
-    var data = { value: allEmails };
-
-
-    // Filter: from supplier only (no CC check needed - $search already filtered by sender)
-    var emails = (data.value || []).filter(function(e) {
-      return e.from && e.from.emailAddress &&
-        e.from.emailAddress.address.toLowerCase() === SUPPLIER.toLowerCase();
-    });
-
-    console.log("After filter:", emails.length, "matching emails");
 
     var list = $('emailList');
-    if (!emails.length) {
-      var noEmailsMsg = "No referral emails found where you are CCd on the email.";
-      list.innerHTML = "<div class='no-emails'>" + noEmailsMsg + "</div>";
+    if (!allEmails.length) {
+      list.innerHTML = '<div class="no-emails">No emails found from ' + SUPPLIER + '</div>';
+      return;
     }
 
     var found = 0;
-    emails.forEach(function(email) {
+    allEmails.forEach(function(email) {
       var prospect = findProspect(email.toRecipients);
-      var date = new Date(email.receivedDateTime).toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" });
-      var toAddrs = (email.toRecipients || []).map(function(r) { return r.emailAddress.address; }).join(", ") || "(none)";
-      var div = document.createElement("div");
-      div.className = "email-item";
+      var date = new Date(email.receivedDateTime).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' });
+      var toAddrs = (email.toRecipients || []).map(function(r) { return r.emailAddress.address; }).join(', ') || '(none)';
+      var div = document.createElement('div');
+      div.className = 'email-item';
+
       if (!prospect) {
-        div.style.borderColor = "#fca5a5";
-        div.style.background = "#fff5f5";
-        div.innerHTML = "<div class='ei-header'><div>"
-          + "<div class='ei-sender' style='color:#c00'>NO PROSPECT DETECTED</div>"
-          + "<div class='ei-subject'>" + email.subject + "</div>"
-          + "<div class='ei-subject' style='color:#888;margin-top:4px'>To: " + toAddrs + "</div>"
-          + "</div><div class='ei-date'>" + date + "</div></div>";
+        div.style.borderColor = '#fca5a5';
+        div.style.background = '#fff5f5';
+        div.innerHTML = '<div class="ei-header"><div>'
+          + '<div class="ei-sender" style="color:#c00">NO PROSPECT DETECTED</div>'
+          + '<div class="ei-subject">' + email.subject + '</div>'
+          + '<div class="ei-subject" style="color:#888;margin-top:4px">To: ' + toAddrs + '</div>'
+          + '</div><div class="ei-date">' + date + '</div></div>';
         list.appendChild(div);
         return;
       }
+
       found++;
-      div.innerHTML = "<div class='check'><svg width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3'><polyline points='20 6 9 17 4 12'/></svg></div>"
-        + "<div class='ei-header'><div>"
-        + "<div class='ei-sender'>" + (email.from.emailAddress.name || email.from.emailAddress.address) + "</div>"
-        + "<div class='ei-subject'>" + email.subject + "</div>"
-        + "<div class='ei-subject' style='color:#888;margin-top:4px'>To: " + toAddrs + "</div>"
-        + "</div><div class='ei-date'>" + date + "</div></div>"
-        + "<div class='ei-prospect'>Prospect: " + prospect + "</div>";
-      div.addEventListener("click", function() { selectEmail(div, prospect); });
+      div.innerHTML = '<div class="check"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>'
+        + '<div class="ei-header"><div>'
+        + '<div class="ei-sender">' + (email.from.emailAddress.name || email.from.emailAddress.address) + '</div>'
+        + '<div class="ei-subject">' + email.subject + '</div>'
+        + '<div class="ei-subject" style="color:#888;margin-top:4px">To: ' + toAddrs + '</div>'
+        + '</div><div class="ei-date">' + date + '</div></div>'
+        + '<div class="ei-prospect">Prospect: ' + prospect + '</div>';
+      div.addEventListener('click', function() { selectEmail(div, prospect); });
       list.appendChild(div);
     });
 
-    if (!list.children.length) list.innerHTML = "<div class='no-emails'>No matching emails found.</div>";
+    if (!found && list.children.length === 0) {
+      list.innerHTML = '<div class="no-emails">No matching emails found.</div>';
+    }
+
   } catch(e) {
     toast('Scan error: ' + e.message, true);
+    console.error('Scan error:', e);
   } finally {
     btn.disabled = false;
     btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> Scan again';
   }
 }
+
 
 function selectEmail(el, prospect) {
   document.querySelectorAll('.email-item').forEach(function(e) { e.classList.remove('selected'); });
