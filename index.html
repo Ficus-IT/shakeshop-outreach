@@ -386,22 +386,34 @@ async function doScan() {
     var found = 0;
     emails.forEach(function(email) {
       var prospect = findProspect(email.toRecipients);
-      if (!prospect) return;
+      var date = new Date(email.receivedDateTime).toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" });
+      var toAddrs = (email.toRecipients || []).map(function(r) { return r.emailAddress.address; }).join(", ") || "(none)";
+      var div = document.createElement("div");
+      div.className = "email-item";
+      if (!prospect) {
+        div.style.borderColor = "#fca5a5";
+        div.style.background = "#fff5f5";
+        div.innerHTML = "<div class='ei-header'><div>"
+          + "<div class='ei-sender' style='color:#c00'>NO PROSPECT DETECTED</div>"
+          + "<div class='ei-subject'>" + email.subject + "</div>"
+          + "<div class='ei-subject' style='color:#888;margin-top:4px'>To: " + toAddrs + "</div>"
+          + "</div><div class='ei-date'>" + date + "</div></div>";
+        list.appendChild(div);
+        return;
+      }
       found++;
-      var date = new Date(email.receivedDateTime).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' });
-      var div = document.createElement('div');
-      div.className = 'email-item';
-      div.innerHTML = '<div class="check"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>'
-        + '<div class="ei-header"><div>'
-        + '<div class="ei-sender">' + (email.from.emailAddress.name || email.from.emailAddress.address) + '</div>'
-        + '<div class="ei-subject">' + email.subject + '</div>'
-        + '</div><div class="ei-date">' + date + '</div></div>'
-        + '<div class="ei-prospect">Prospect: ' + prospect + '</div>';
-      div.addEventListener('click', function() { selectEmail(div, prospect); });
+      div.innerHTML = "<div class='check'><svg width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3'><polyline points='20 6 9 17 4 12'/></svg></div>"
+        + "<div class='ei-header'><div>"
+        + "<div class='ei-sender'>" + (email.from.emailAddress.name || email.from.emailAddress.address) + "</div>"
+        + "<div class='ei-subject'>" + email.subject + "</div>"
+        + "<div class='ei-subject' style='color:#888;margin-top:4px'>To: " + toAddrs + "</div>"
+        + "</div><div class='ei-date'>" + date + "</div></div>"
+        + "<div class='ei-prospect'>Prospect: " + prospect + "</div>";
+      div.addEventListener("click", function() { selectEmail(div, prospect); });
       list.appendChild(div);
     });
 
-    if (!found) list.innerHTML = '<div class="no-emails">Emails found but no prospect email in the To: field.</div>';
+    if (!list.children.length) list.innerHTML = "<div class='no-emails'>No matching emails found.</div>";
   } catch(e) {
     toast('Scan error: ' + e.message, true);
   } finally {
