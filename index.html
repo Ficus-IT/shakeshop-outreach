@@ -353,16 +353,25 @@ async function doScan() {
   $('emailList').innerHTML = '';
 
   try {
-    // No $filter + $orderby together - fetch recent messages and filter client-side
-    var url = 'https://graph.microsoft.com/v1.0/me/messages?$select=id,subject,from,toRecipients,ccRecipients,receivedDateTime&$top=50&$orderby=receivedDateTime desc';
-    var resp = await fetch(url, { headers: { Authorization: 'Bearer ' + accessToken } });
-    
-    if (resp.status === 401) {
-      localStorage.removeItem('ms_access_token');
-      toast('Session expired. Please sign in again.', true);
-      setTimeout(function() { location.reload(); }, 2000);
-      return;
+    // Fetch ALL emails using pagination
+    var allEmails = [];
+    var nextUrl = 'https://graph.microsoft.com/v1.0/me/messages?$select=id,subject,from,toRecipients,ccRecipients,receivedDateTime&$top=100&$orderby=receivedDateTime desc';
+    while (nextUrl) {
+      var resp = await fetch(nextUrl, { headers: { Authorization: 'Bearer ' + accessToken } });
+      if (resp.status === 401) {
+        localStorage.removeItem('ms_access_token');
+        toast('Session expired. Please sign in again.', true);
+        setTimeout(function() { location.reload(); }, 2000);
+        return;
+      }
+      var pageData = await resp.json();
+      if (!resp.ok) throw new Error(pageData.error ? pageData.error.message : 'Graph API error');
+      allEmails = allEmails.concat(pageData.value || []);
+      nextUrl = pageData['@odata.nextLink'] || null;
+      console.log('Fetched page, total so far:', allEmails.length);
     }
+    var data = { value: allEmails };
+
 
     console.log("fetching data");
     var data = await resp.json();
