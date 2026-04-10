@@ -334,7 +334,10 @@ function doSignOut() {
 
 function findProspect(toList) {
   return (toList || []).map(function(r) { return r.emailAddress.address; })
-    .find(function(e) { return !EXCLUDED.some(function(d) { return e.toLowerCase().includes(d); }); }) || null;
+    .find(function(e) {
+      var excluded = EXCLUDED.concat([MY_DOMAIN]);
+      return !excluded.some(function(d) { return e.toLowerCase().includes(d); });
+    }) || null;
 }
 
 async function doScan() {
@@ -404,14 +407,10 @@ async function doScan() {
       console.log("Email " + (i+1) + " | From: " + from + " | To: " + to + " | CC: " + cc);
     });
 
-    // Filter: from supplier AND we are CCd
+    // Filter: from supplier only (no CC check needed - $search already filtered by sender)
     var emails = (data.value || []).filter(function(e) {
-      var fromSupplier = e.from && e.from.emailAddress &&
+      return e.from && e.from.emailAddress &&
         e.from.emailAddress.address.toLowerCase() === SUPPLIER.toLowerCase();
-      var weCCd = (e.ccRecipients || []).some(function(r) {
-        return r.emailAddress.address.toLowerCase().includes(MY_DOMAIN);
-      });
-      return fromSupplier && weCCd;
     });
 
     console.log("After filter:", emails.length, "matching emails");
