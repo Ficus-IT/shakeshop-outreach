@@ -364,6 +364,7 @@ async function doScan() {
       return;
     }
 
+    console.log("fetching data");
     var data = await resp.json();
     if (!resp.ok) throw new Error(data.error ? data.error.message : 'Graph API error');
     console.log("=== SCAN RESULTS ===");
