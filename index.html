@@ -351,7 +351,7 @@ async function doScan() {
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span> Scanning...';
   $('emailList').innerHTML = '';
-
+ 
   try {
     // No $filter + $orderby together - fetch recent messages and filter client-side
     var url = 'https://graph.microsoft.com/v1.0/me/messages?$select=id,subject,from,toRecipients,ccRecipients,receivedDateTime&$top=50&$orderby=receivedDateTime desc';
@@ -363,6 +363,8 @@ async function doScan() {
       setTimeout(function() { location.reload(); }, 2000);
       return;
     }
+
+     toast('emailList: ' resp.json(), true);
 
     var data = await resp.json();
     if (!resp.ok) throw new Error(data.error ? data.error.message : 'Graph API error');
