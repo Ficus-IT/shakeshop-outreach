@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shake Shop – Outreach Email Generator</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f0; color: #1a1a1a; min-height: 100vh; }
+
+  .header { background: #fff; border-bottom: 1px solid #e8e8e4; padding: 18px 32px; display: flex; align-items: center; gap: 14px; }
+  .logo { width: 38px; height: 38px; background: linear-gradient(135deg, #f4a07a, #5dbfa0); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 14px; }
+  .header h1 { font-size: 17px; font-weight: 600; color: #1a1a1a; }
+  .header span { font-size: 13px; color: #888; margin-left: 2px; }
+
+  .container { max-width: 900px; margin: 32px auto; padding: 0 24px; }
+
+  .card { background: #fff; border-radius: 14px; border: 1px solid #e8e8e4; padding: 28px; margin-bottom: 20px; }
+  .card-title { font-size: 14px; font-weight: 600; color: #555; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  .step-badge { background: #f0faf6; color: #1d9e75; border: 1px solid #9fe1cb; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+
+  label { display: block; font-size: 13px; font-weight: 500; color: #444; margin-bottom: 6px; }
+  textarea { width: 100%; border: 1px solid #ddd; border-radius: 8px; padding: 12px 14px; font-size: 13px; font-family: inherit; resize: vertical; line-height: 1.6; color: #1a1a1a; background: #fafafa; transition: border-color 0.2s; }
+  textarea:focus { outline: none; border-color: #5dbfa0; background: #fff; }
+  input[type="text"] { width: 100%; border: 1px solid #ddd; border-radius: 8px; padding: 10px 14px; font-size: 13px; font-family: inherit; color: #1a1a1a; background: #fafafa; transition: border-color 0.2s; }
+  input[type="text"]:focus { outline: none; border-color: #5dbfa0; background: #fff; }
+
+  .detected-email { display: inline-flex; align-items: center; gap: 8px; background: #f0faf6; border: 1px solid #9fe1cb; border-radius: 8px; padding: 8px 14px; font-size: 13px; color: #0f6e56; font-weight: 500; margin-top: 10px; }
+  .detected-email .dot { width: 7px; height: 7px; background: #1d9e75; border-radius: 50%; }
+  .no-email { color: #c0392b; font-size: 12px; margin-top: 8px; }
+
+  .btn-generate { background: #1d9e75; color: white; border: none; border-radius: 10px; padding: 13px 28px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.2s, transform 0.1s; display: flex; align-items: center; gap: 8px; }
+  .btn-generate:hover { background: #178a65; }
+  .btn-generate:active { transform: scale(0.98); }
+  .btn-generate:disabled { background: #b0d8cb; cursor: not-allowed; }
+
+  .loading { display: none; align-items: center; gap: 10px; color: #888; font-size: 13px; margin-top: 16px; }
+  .spinner { width: 16px; height: 16px; border: 2px solid #ddd; border-top-color: #1d9e75; border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .result-card { display: none; background: #fff; border-radius: 14px; border: 1px solid #e8e8e4; padding: 28px; margin-bottom: 20px; }
+  .result-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: gap; gap: 12px; }
+  .result-title { font-size: 14px; font-weight: 600; color: #555; text-transform: uppercase; letter-spacing: 0.05em; }
+
+  .email-meta { background: #fafafa; border: 1px solid #eee; border-radius: 8px; padding: 12px 16px; margin-bottom: 14px; font-size: 13px; }
+  .email-meta div { margin-bottom: 6px; display: flex; gap: 8px; }
+  .email-meta div:last-child { margin-bottom: 0; }
+  .meta-label { color: #888; font-weight: 500; min-width: 52px; }
+  .meta-val { color: #1a1a1a; font-weight: 500; }
+
+  .email-body { background: #fafafa; border: 1px solid #eee; border-radius: 8px; padding: 16px; font-size: 13.5px; line-height: 1.75; color: #1a1a1a; white-space: pre-wrap; font-family: inherit; }
+
+  .action-row { display: flex; gap: 12px; margin-top: 18px; flex-wrap: wrap; }
+  .btn-outlook { background: #0078d4; color: white; border: none; border-radius: 9px; padding: 11px 22px; font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 7px; transition: background 0.2s; }
+  .btn-outlook:hover { background: #006cbd; }
+  .btn-copy { background: #fff; color: #444; border: 1px solid #ddd; border-radius: 9px; padding: 11px 22px; font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 7px; transition: all 0.2s; }
+  .btn-copy:hover { border-color: #aaa; background: #f8f8f8; }
+  .btn-reset { background: #fff; color: #888; border: 1px solid #ddd; border-radius: 9px; padding: 11px 18px; font-size: 13px; cursor: pointer; margin-left: auto; transition: all 0.2s; }
+  .btn-reset:hover { border-color: #aaa; color: #444; }
+
+  .error-msg { background: #fef2f2; border: 1px solid #fca5a5; border-radius: 8px; padding: 12px 16px; color: #b91c1c; font-size: 13px; margin-top: 12px; display: none; }
+
+  .hint { font-size: 12px; color: #aaa; margin-top: 6px; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 600px) { .row2 { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">SS</div>
+  <div>
+    <h1>Shake Shop <span>· Outreach Generator</span></h1>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- Step 1 -->
+  <div class="card">
+    <div class="card-title"><div class="step-badge">1</div> Paste the supplier referral email</div>
+    <label>Email body from Innovative Vending / Shake Shop</label>
+    <textarea id="emailBody" rows="8" placeholder="Paste the full email body here. The tool will automatically extract the referred prospect's email address..."></textarea>
+    <div id="detectedEmail"></div>
+    <p class="hint">The tool looks for any email address in the body that is NOT from @innovative-vending.com or @shake-shop.com</p>
+  </div>
+
+  <!-- Step 2 -->
+  <div class="card">
+    <div class="card-title"><div class="step-badge">2</div> Customize your outreach</div>
+    <div class="row2" style="margin-bottom:14px;">
+      <div>
+        <label>Your name</label>
+        <input type="text" id="senderName" placeholder="e.g. Badr Zindine" value="Badr Zindine">
+      </div>
+      <div>
+        <label>Your title</label>
+        <input type="text" id="senderTitle" placeholder="e.g. VP Sales & Marketing" value="VP Sales & Marketing">
+      </div>
+    </div>
+    <div class="row2" style="margin-bottom:14px;">
+      <div>
+        <label>Your email</label>
+        <input type="text" id="senderEmail" placeholder="badr.zindine@shake-shop.com" value="badr.zindine@shake-shop.com">
+      </div>
+      <div>
+        <label>Your phone</label>
+        <input type="text" id="senderPhone" placeholder="438-409-4641" value="438-409-4641">
+      </div>
+    </div>
+    <div style="margin-bottom:14px;">
+      <label>Prospect's first name (if known — leave blank to use "there")</label>
+      <input type="text" id="prospectName" placeholder="e.g. Aidan  (extracted from email if found)">
+    </div>
+    <div>
+      <label>Language</label>
+      <select id="lang" style="width:100%;border:1px solid #ddd;border-radius:8px;padding:10px 14px;font-size:13px;font-family:inherit;background:#fafafa;color:#1a1a1a;">
+        <option value="en">English</option>
+        <option value="fr">Français</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Generate -->
+  <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+    <button class="btn-generate" id="generateBtn" onclick="generate()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      Generate outreach email
+    </button>
+    <div class="loading" id="loading"><div class="spinner"></div> AI is crafting the email…</div>
+  </div>
+  <div class="error-msg" id="errorMsg"></div>
+
+  <!-- Result -->
+  <div class="result-card" id="resultCard">
+    <div class="result-header">
+      <div class="result-title">Generated email</div>
+    </div>
+    <div class="email-meta" id="emailMeta"></div>
+    <div class="email-body" id="emailBodyOutput"></div>
+    <div class="action-row">
+      <a class="btn-outlook" id="outlookLink" href="#" target="_blank">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        Open in Outlook
+      </a>
+      <button class="btn-copy" onclick="copyEmail()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        Copy body
+      </button>
+      <button class="btn-reset" onclick="reset()">Start over</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const BROCHURE = `Shake Shop is Canada's exclusive distributor of smart protein shake and smoothie vending machines. Here's what makes us different:
+
+THE MACHINE:
+- Built-in ice maker — no plumbing required
+- Premium Diesel Whey Isolate protein (New Zealand sourced, up to 27g protein per shake)
+- Freeze-dried fruit powders, stevia-sweetened, no artificial flavours or colours
+- Cashless payments: Apple Pay, Google Pay, Interac, credit cards
+- Smart analytics & remote monitoring
+- Auto-cleaning system
+
+THREE BUSINESS MODELS:
+1. Private Label (BM1) – Buy the machine for $37,000 CAD. Use your own brand and proteins. Keep 100% of revenue. Typical ROI: 10–12 months.
+2. Shake Shop Operator (BM2) – Buy the machine, operate under our brand. Includes discounted supplies, technical support, marketing & recipe library. Royalties: $0.50/shake + 2% marketing fund.
+3. Host Model (BM3) – Zero cost to you. We install and operate the machine. You earn 10–20% monthly commission based on traffic.
+
+MARKET OPPORTUNITY (Canada):
+- Vending industry: US$2.4B+
+- Smart vending projected to reach US$3.58B by 2030
+- Smoothie market: US$306M → US$571M by 2030
+- Protein supplements reaching US$420M by 2032
+- North America holds 33% of global vending market share
+
+PROFIT POTENTIAL (based on 30 shakes/day at $8 each):
+- BM1: ~$61,000/year profit
+- BM2: ~$55,000/year profit
+- BM3: $8,640–$17,280/year in commissions
+- Gross margin: up to 200%`;
+
+function extractEmail(text) {
+  const excluded = ['innovative-vending.com', 'shake-shop.com', 'shake-shop.ca'];
+  const regex = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g;
+  const matches = text.match(regex) || [];
+  return matches.find(e => !excluded.some(d => e.toLowerCase().includes(d))) || null;
+}
+
+function extractFirstName(text, email) {
+  // Try "Hello [Name]," pattern
+  const m = text.match(/Hello\s+([A-Z][a-z]+)/i);
+  if (m) return m[1];
+  // Try email prefix
+  if (email) {
+    const prefix = email.split('@')[0].split(/[._\-]/)[0];
+    return prefix.charAt(0).toUpperCase() + prefix.slice(1);
+  }
+  return '';
+}
+
+document.getElementById('emailBody').addEventListener('input', function() {
+  const text = this.value;
+  const email = extractEmail(text);
+  const firstName = extractFirstName(text, email);
+  const el = document.getElementById('detectedEmail');
+  if (email) {
+    el.innerHTML = `<div class="detected-email"><div class="dot"></div> Prospect detected: <strong>${email}</strong></div>`;
+    if (firstName && !document.getElementById('prospectName').value) {
+      document.getElementById('prospectName').value = firstName;
+    }
+  } else if (text.trim().length > 20) {
+    el.innerHTML = `<p class="no-email">No prospect email found yet — keep typing or check the email body</p>`;
+  } else {
+    el.innerHTML = '';
+  }
+});
+
+async function generate() {
+  const body = document.getElementById('emailBody').value.trim();
+  const senderName = document.getElementById('senderName').value.trim() || 'Badr Zindine';
+  const senderTitle = document.getElementById('senderTitle').value.trim() || 'VP Sales & Marketing';
+  const senderEmail = document.getElementById('senderEmail').value.trim() || 'badr.zindine@shake-shop.com';
+  const senderPhone = document.getElementById('senderPhone').value.trim() || '438-409-4641';
+  const prospectName = document.getElementById('prospectName').value.trim();
+  const lang = document.getElementById('lang').value;
+  const errEl = document.getElementById('errorMsg');
+  errEl.style.display = 'none';
+
+  if (!body) { showError('Please paste the supplier email body first.'); return; }
+
+  const prospectEmail = extractEmail(body);
+  if (!prospectEmail) { showError('Could not find a prospect email address in the body. Make sure the referred email is visible in the text.'); return; }
+
+  const greeting = prospectName || 'there';
+
+  document.getElementById('generateBtn').disabled = true;
+  document.getElementById('loading').style.display = 'flex';
+  document.getElementById('resultCard').style.display = 'none';
+
+  const langInstruction = lang === 'fr'
+    ? 'Write the email entirely in French (Quebec professional register).'
+    : 'Write the email in English.';
+
+  const prompt = `You are writing a professional outreach email on behalf of Shake Shop, Canada's exclusive distributor of smart protein shake and smoothie vending machines.
+
+The prospect's name is: ${greeting}
+The prospect's email is: ${prospectEmail}
+They were referred to Shake Shop by Innovative Vending as a potential Canadian distributor/host/investor.
+
+${langInstruction}
+
+Write a warm, concise, professional introductory outreach email (4–6 short paragraphs) that:
+1. Opens by mentioning they were referred by Innovative Vending as an exclusive Canadian partner
+2. Briefly introduces Shake Shop and the business opportunity (use the brochure info below)
+3. Highlights 2–3 compelling points: zero-cost host model OR ownership model, profit potential, booming health vending market
+4. Ends with a clear, friendly call to action: invite them to reply to this email to book a meeting and discuss which business model suits them best
+5. Signs off from the sender
+
+Keep it engaging but not salesy. No bullet lists in the email — flowing prose only.
+Do NOT include a subject line in the body. Just the email body text.
+
+BROCHURE INFO:
+${BROCHURE}
+
+Sender info:
+Name: ${senderName}
+Title: ${senderTitle}
+Email: ${senderEmail}
+Phone: ${senderPhone}
+Company: Shake Shop
+Website: shake-shop.ca`;
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await resp.json();
+    if (!resp.ok || !data.content) throw new Error(data.error?.message || 'API error');
+
+    const emailText = data.content.map(b => b.text || '').join('').trim();
+
+    const subjectLine = lang === 'fr'
+      ? `Innovative Vending nous a parlé de vous – Découvrez Shake Shop`
+      : `Innovative Vending referred us to you – Meet Shake Shop`;
+
+    // Build display
+    document.getElementById('emailMeta').innerHTML = `
+      <div><span class="meta-label">To:</span><span class="meta-val">${prospectEmail}</span></div>
+      <div><span class="meta-label">From:</span><span class="meta-val">${senderEmail}</span></div>
+      <div><span class="meta-label">Subject:</span><span class="meta-val">${subjectLine}</span></div>`;
+    document.getElementById('emailBodyOutput').textContent = emailText;
+
+    // Build mailto link
+    const mailto = `mailto:${encodeURIComponent(prospectEmail)}?subject=${encodeURIComponent(subjectLine)}&body=${encodeURIComponent(emailText)}`;
+    document.getElementById('outlookLink').href = mailto;
+
+    document.getElementById('resultCard').style.display = 'block';
+    document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  } catch(e) {
+    showError('Error generating email: ' + e.message);
+  } finally {
+    document.getElementById('generateBtn').disabled = false;
+    document.getElementById('loading').style.display = 'none';
+  }
+}
+
+function showError(msg) {
+  const el = document.getElementById('errorMsg');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function copyEmail() {
+  const text = document.getElementById('emailBodyOutput').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector('.btn-copy');
+    btn.textContent = '✓ Copied!';
+    setTimeout(() => { btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy body'; }, 2000);
+  });
+}
+
+function reset() {
+  document.getElementById('emailBody').value = '';
+  document.getElementById('detectedEmail').innerHTML = '';
+  document.getElementById('prospectName').value = '';
+  document.getElementById('resultCard').style.display = 'none';
+  document.getElementById('errorMsg').style.display = 'none';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+</script>
+</body>
+</html>
