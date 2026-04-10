@@ -62,6 +62,12 @@
   .action-row { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; align-items: center; }
   .toast { position: fixed; bottom: 24px; right: 24px; background: #1d9e75; color: white; border-radius: 10px; padding: 13px 20px; font-size: 13px; font-weight: 500; display: none; align-items: center; gap: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); z-index: 999; }
   .toast.err { background: #c0392b; }
+
+  .toggle-wrap { display:flex; align-items:center; }
+  .toggle-track { width:38px; height:22px; background:#ddd; border-radius:11px; position:relative; cursor:pointer; transition:background 0.2s; }
+  .toggle-track.on { background:#1d9e75; }
+  .toggle-thumb { width:16px; height:16px; background:white; border-radius:50%; position:absolute; top:3px; left:3px; transition:left 0.2s; box-shadow:0 1px 3px rgba(0,0,0,0.2); }
+  .toggle-track.on .toggle-thumb { left:19px; }
 </style>
 </head>
 <body>
@@ -120,13 +126,23 @@
     </button>
   </div>
   <div class="card" id="previewCard">
-    <div class="card-title"><div class="step-dot">3</div> Preview &amp; send</div>
+    <div class="card-title"><div class="step-dot">3</div> Preview &amp; send
+  <label style="margin-left:auto;display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none;letter-spacing:0;font-size:13px;color:#444;font-weight:400;">
+    <div class="toggle-wrap" id="draftToggleWrap">
+      <input type="checkbox" id="draftToggle" style="display:none;" onchange="updateDraftMode()">
+      <div class="toggle-track" id="toggleTrack">
+        <div class="toggle-thumb" id="toggleThumb"></div>
+      </div>
+    </div>
+    <span id="draftLabel">Save as draft (no auto-send)</span>
+  </label>
+</div>
     <div class="meta-box" id="previewMeta"></div>
     <div class="preview-box" id="previewBody"></div>
     <div class="action-row">
       <button class="btn-blue" id="sendBtn">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-        Send via Outlook
+        <span id="sendBtnLabel">Send via Outlook</span>
       </button>
       <button class="btn-outline" id="regenBtn">Regenerate</button>
       <button class="btn-outline" id="backBtn">Back</button>
@@ -433,34 +449,61 @@ async function doGenerate() {
   }
 }
 
+function updateDraftMode() {
+  const isDraft = $('draftToggle').checked;
+  const track = $('toggleTrack');
+  if (isDraft) { track.classList.add('on'); } else { track.classList.remove('on'); }
+  $('sendBtnLabel').textContent = isDraft ? 'Save as Draft' : 'Send via Outlook';
+  $('draftLabel').textContent = isDraft ? 'Save as draft (no auto-send)' : 'Send immediately';
+}
+
+// Wire toggle click to checkbox
+document.addEventListener('DOMContentLoaded', function() {
+  $('toggleTrack').addEventListener('click', function() {
+    $('draftToggle').checked = !$('draftToggle').checked;
+    updateDraftMode();
+  });
+});
+
 async function doSend() {
   if (!currentBody || !currentProspect) return;
+  const isDraft = $('draftToggle').checked;
   const btn = $('sendBtn');
   btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span> Sending...';
+  btn.innerHTML = '<span class="spinner"></span> ' + (isDraft ? 'Saving draft...' : 'Sending...');
   try {
     const token = await getToken();
     const senderEmail = $('senderEmail').value.trim();
-    const resp = await fetch('https://graph.microsoft.com/v1.0/me/sendMail', {
-      method: 'POST',
-      headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        message: {
-          subject: currentSubject,
-          body: { contentType: 'Text', content: currentBody },
-          toRecipients: [{ emailAddress: { address: currentProspect } }],
-          replyTo: [{ emailAddress: { address: senderEmail } }]
-        },
-        saveToSentItems: true
-      })
-    });
-    if (!resp.ok) { const e = await resp.json(); throw new Error(e.error ? e.error.message : 'Send failed'); }
-    toast('Email sent to ' + currentProspect);
+    const message = {
+      subject: currentSubject,
+      body: { contentType: 'Text', content: currentBody },
+      toRecipients: [{ emailAddress: { address: currentProspect } }],
+      replyTo: [{ emailAddress: { address: senderEmail } }]
+    };
+    if (isDraft) {
+      // Save to Drafts folder
+      const resp = await fetch('https://graph.microsoft.com/v1.0/me/messages', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify(message)
+      });
+      if (!resp.ok) { const e = await resp.json(); throw new Error(e.error ? e.error.message : 'Draft save failed'); }
+      toast('Draft saved for ' + currentProspect);
+    } else {
+      // Send immediately
+      const resp = await fetch('https://graph.microsoft.com/v1.0/me/sendMail', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: message, saveToSentItems: true })
+      });
+      if (!resp.ok) { const e = await resp.json(); throw new Error(e.error ? e.error.message : 'Send failed'); }
+      toast('Email sent to ' + currentProspect);
+    }
     setTimeout(doBackToScan, 2500);
   } catch(e) {
-    toast('Send error: ' + e.message, true);
+    toast((isDraft ? 'Draft error: ' : 'Send error: ') + e.message, true);
     btn.disabled = false;
-    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Send via Outlook';
+    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> <span id="sendBtnLabel">' + (isDraft ? 'Save as Draft' : 'Send via Outlook') + '</span>';
   }
 }
 
@@ -474,6 +517,7 @@ function doBackToScan() {
 
 // Wire up buttons after DOM ready
 document.addEventListener('DOMContentLoaded', function() {
+  init();
   $('signInBtn').addEventListener('click', doSignIn);
   $('signOutBtn').addEventListener('click', function() { msalInstance.logoutPopup(); location.reload(); });
   $('scanBtn').addEventListener('click', doScan);
