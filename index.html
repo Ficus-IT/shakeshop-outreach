@@ -353,23 +353,36 @@ async function doScan() {
   $('emailList').innerHTML = '';
 
   try {
-    // Fetch ALL emails using pagination
+    // Use $search to find only emails from the supplier - fast, no need to scan all emails
     var allEmails = [];
-    var nextUrl = 'https://graph.microsoft.com/v1.0/me/messages?$select=id,subject,from,toRecipients,ccRecipients,receivedDateTime&$top=100&$orderby=receivedDateTime desc';
+    var nextUrl = 'https://graph.microsoft.com/v1.0/me/messages'
+      + '?$search="from:' + SUPPLIER + '"'
+      + '&$select=id,subject,from,toRecipients,ccRecipients,receivedDateTime'
+      + '&$top=50';
+    var pageNum = 0;
     while (nextUrl) {
-      var resp = await fetch(nextUrl, { headers: { Authorization: 'Bearer ' + accessToken } });
-      if (resp.status === 401) {
+      pageNum++;
+      console.log('Fetching page ' + pageNum);
+      var pageResp = await fetch(nextUrl, {
+        headers: {
+          Authorization: 'Bearer ' + accessToken,
+          ConsistencyLevel: 'eventual'
+        }
+      });
+      if (pageResp.status === 401) {
         localStorage.removeItem('ms_access_token');
         toast('Session expired. Please sign in again.', true);
         setTimeout(function() { location.reload(); }, 2000);
         return;
       }
-      var pageData = await resp.json();
-      if (!resp.ok) throw new Error(pageData.error ? pageData.error.message : 'Graph API error');
-      allEmails = allEmails.concat(pageData.value || []);
+      var pageData = await pageResp.json();
+      if (!pageResp.ok) throw new Error(pageData.error ? pageData.error.message : 'Graph API error');
+      var pageEmails = pageData.value || [];
+      allEmails = allEmails.concat(pageEmails);
+      console.log('Page ' + pageNum + ': got ' + pageEmails.length + ' emails, total so far: ' + allEmails.length);
       nextUrl = pageData['@odata.nextLink'] || null;
-      console.log('Fetched page, total so far:', allEmails.length);
     }
+    console.log('Search complete. Total emails from supplier:', allEmails.length);
     var data = { value: allEmails };
 
 
