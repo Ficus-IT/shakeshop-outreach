@@ -395,18 +395,6 @@ async function doScan() {
     var data = { value: allEmails };
 
 
-    console.log("fetching data");
-    var data = await resp.json();
-    if (!resp.ok) throw new Error(data.error ? data.error.message : 'Graph API error');
-    console.log("=== SCAN RESULTS ===");
-    console.log("Total emails fetched:", data.value ? data.value.length : 0);
-    (data.value || []).forEach(function(e, i) {
-      var from = e.from && e.from.emailAddress ? e.from.emailAddress.address : "unknown";
-      var to = (e.toRecipients || []).map(function(r) { return r.emailAddress.address; }).join(", ") || "(none)";
-      var cc = (e.ccRecipients || []).map(function(r) { return r.emailAddress.address; }).join(", ") || "(none)";
-      console.log("Email " + (i+1) + " | From: " + from + " | To: " + to + " | CC: " + cc);
-    });
-
     // Filter: from supplier only (no CC check needed - $search already filtered by sender)
     var emails = (data.value || []).filter(function(e) {
       return e.from && e.from.emailAddress &&
