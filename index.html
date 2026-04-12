@@ -482,7 +482,7 @@ async function doGenerate() {
     var resp = await fetch('https://shakeshop-proxy.patrick-blais.workers.dev', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'claude-3-5-sonnet-20241022', max_tokens: 1000, messages: [{ role: 'user', content: prompt }] })
+      body: JSON.stringify({ model: 'claude-opus-4-5-20251101', max_tokens: 1000, messages: [{ role: 'user', content: prompt }] })
     });
     var data = await resp.json();
     if (!resp.ok) throw new Error(data.error ? data.error.message : 'API error');
