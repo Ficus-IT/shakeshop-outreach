@@ -74,6 +74,10 @@
   .toggle-track.on { background:#1d9e75; }
   .toggle-thumb { width:20px; height:20px; background:white; border-radius:50%; position:absolute; top:3px; left:3px; transition:left 0.3s; box-shadow:0 1px 3px rgba(0,0,0,0.3); }
   .toggle-track.on .toggle-thumb { left:23px; }
+
+  .file-drop { border:2px dashed #e5e7eb; border-radius:8px; padding:16px; text-align:center; cursor:pointer; transition:all 0.2s; display:flex; align-items:center; justify-content:center; gap:8px; font-size:13px; color:#9ca3af; margin-top:4px; }
+  .file-drop:hover { border-color:#1d9e75; color:#1d9e75; background:#f0faf6; }
+  .file-drop.loaded { border-color:#1d9e75; background:#f0faf6; color:#0f6e56; border-style:solid; }
 </style>
 </head>
 <body>
@@ -102,7 +106,32 @@
     </button>
     <p class="init-msg" id="initMsg">Loading authentication...</p>
   </div>
-  <div class="card" id="scanCard">
+  <div class="card visible" id="attachmentCard">
+  <div class="card-title">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+    Brochures (configurées une fois, utilisées pour tous les envois)
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+    <div>
+      <label>Brochure Anglais (PDF)</label>
+      <div class="file-drop" id="dropEn" onclick="document.getElementById('fileEn').click()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <span id="fileEnLabel">Cliquer pour uploader</span>
+      </div>
+      <input type="file" id="fileEn" accept=".pdf" style="display:none" onchange="handleFile('en', this)">
+    </div>
+    <div>
+      <label>Brochure Français (PDF)</label>
+      <div class="file-drop" id="dropFr" onclick="document.getElementById('fileFr').click()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <span id="fileFrLabel">Cliquer pour uploader</span>
+      </div>
+      <input type="file" id="fileFr" accept=".pdf" style="display:none" onchange="handleFile('fr', this)">
+    </div>
+  </div>
+</div>
+
+<div class="card" id="scanCard">
     <div class="card-title"><div class="step-dot">1</div> Scan inbox for referral emails</div>
     <p style="font-size:13px;color:#666;margin-bottom:14px;">Finds emails from <strong>info&#64;innovative-vending.com</strong> where you are CC'd, then extracts the prospect from the To: field.</p>
     <button class="btn-green" id="scanBtn">
@@ -178,6 +207,8 @@ const BROCHURE = "Shake Shop is Canada's exclusive distributor of smart protein 
 
 let accessToken = null;
 let currentProspect = '', currentSubject = '', currentBody = '', currentBodyPlain = '';
+let attachmentEn = null; // { name, b64 }
+let attachmentFr = null;
 
 function $(id) { return document.getElementById(id); }
 
@@ -219,6 +250,27 @@ function generateState() {
   var array = new Uint8Array(16);
   crypto.getRandomValues(array);
   return base64urlencode(array);
+}
+
+function handleFile(lang, input) {
+  var file = input.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var b64 = e.target.result.split(',')[1];
+    var obj = { name: file.name, b64: b64 };
+    if (lang === 'en') {
+      attachmentEn = obj;
+      $('fileEnLabel').textContent = file.name;
+      $('dropEn').classList.add('loaded');
+    } else {
+      attachmentFr = obj;
+      $('fileFrLabel').textContent = file.name;
+      $('dropFr').classList.add('loaded');
+    }
+    console.log('Attachment loaded:', lang, file.name);
+  };
+  reader.readAsDataURL(file);
 }
 
 async function doSignIn() {
@@ -491,7 +543,7 @@ function buildHtmlEmail(bodyHtml, senderName, senderTitle, senderEmail, senderPh
     + '<p style="margin:0 0 2px;font-size:15px;font-weight:700;color:#1a1a1a;">' + senderName + '</p>'
     + '<p style="margin:0 0 2px;font-size:13px;color:#5dbfa0;">' + senderTitle + '</p>'
     + '<p style="margin:0 0 2px;font-size:13px;color:#6b7280;">' + senderEmail + ' · ' + senderPhone + '</p>'
-    + '<p style="margin:4px 0 0;font-size:13px;"><a href="https://shake-shop.ca" style="color:#1d9e75;text-decoration:none;">shake-shop.ca</a></p>'
+    + '<p style="margin:4px 0 0;font-size:13px;"><a href="https://shake-shop.com" style="color:#1d9e75;text-decoration:none;">shake-shop.com</a></p>'
     + '</td></tr></table>'
     + '</td></tr>'
     
@@ -578,12 +630,22 @@ async function doSend() {
     var senderEmail = $('senderEmail').value.trim();
     var testEmail = $('testEmail').value.trim();
     var recipient = testEmail || currentProspect;
+    var lang = $('lang').value;
+    var attachment = lang === 'fr' ? attachmentFr : attachmentEn;
     var message = {
       subject: currentSubject,
       body: { contentType: 'HTML', content: currentBody },
       toRecipients: [{ emailAddress: { address: recipient } }],
       replyTo: [{ emailAddress: { address: senderEmail } }]
     };
+    if (attachment) {
+      message.attachments = [{
+        '@odata.type': '#microsoft.graph.fileAttachment',
+        name: attachment.name,
+        contentType: 'application/pdf',
+        contentBytes: attachment.b64
+      }];
+    }
 
     var url, body;
     if (isDraft) {
