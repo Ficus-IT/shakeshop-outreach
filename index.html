@@ -673,6 +673,8 @@ async function doSend() {
     });
     if (!resp.ok) { var e = await resp.json(); throw new Error(e.error ? e.error.message : 'Failed'); }
     toast(isDraft ? 'Draft saved for ' + currentProspect : 'Email sent to ' + currentProspect);
+    btn.disabled = false;
+    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> <span id="sendBtnLabel">' + (isDraft ? 'Save as Draft' : 'Send via Outlook') + '</span>';
     setTimeout(doBackToScan, 2500);
   } catch(e) {
     toast((isDraft ? 'Draft error: ' : 'Send error: ') + e.message, true);
