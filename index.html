@@ -576,11 +576,11 @@ async function doGenerate() {
     + 'Prospect name: ' + name + '\nProspect email: ' + currentProspect + '\n'
     + 'They were referred by Innovative Vending as a potential Canadian partner.\n'
     + langNote + '\n\n'
-    + '4-5 short paragraphs: 1) Open mentioning Innovative Vending referred them; '
-    + '2) Introduce Shake Shop briefly; '
-    + '3) Highlight 2-3 compelling points (host model zero cost, profit potential, booming market); '
-    + '4) CTA: reply to book a meeting; 5) Sign off from sender.\n\n'
-    + 'IMPORTANT: Return ONLY plain text paragraphs separated by blank lines. No HTML, no subject line, no salutation, no signature.\\n\\n'
+    + '4-5 short paragraphs: 1) Open mentioning Innovative Vending referred them to our exclusive Canadian distribution; '
+    + '2) Announce our NEW machine at only $13,999 CAD - emphasize this is an accessible entry point with strong ROI; '
+    + '3) Focus on profitability: gross margin up to 200%, payback period as fast as 9 months at 25 shakes/day, '
+    + 'annual revenue of ~$15,913 for investor at 25 shakes/day, Host model earns passive income with zero investment; '
+    + '4) CTA: reply to book a meeting to discuss the best model for them.\\n\\n'
     + 'BROCHURE: ' + BROCHURE + '\n\n'
     + 'Sender: ' + senderName + ', ' + senderTitle + ' | ' + senderEmail + ' | ' + senderPhone + ' | shake-shop.ca';
 
@@ -603,8 +603,8 @@ async function doGenerate() {
     currentBody = buildHtmlEmail(paragraphsHtml, senderName, senderTitle, senderEmail, senderPhone);
     currentBodyPlain = plainText;
     currentSubject = lang === 'fr'
-      ? 'Innovative Vending nous a parle de vous - Decouvrez Shake Shop'
-      : 'Innovative Vending referred us to you - Meet Shake Shop';
+      ? 'Shake-Shop : Lancement de notre nouveau modele a $13,999!'
+      : 'Shake-Shop : Introducing our newest model at $13,999!';
 
     $('previewMeta').innerHTML = '<div><span>To: </span><strong>' + currentProspect + '</strong></div>'
       + '<div><span>From: </span><strong>' + senderEmail + '</strong></div>'
