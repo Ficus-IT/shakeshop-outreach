@@ -583,12 +583,15 @@ async function doGenerate() {
     + 'annual investor revenue of ~$15,913 at 25 shakes/day, gross margin up to 200%, '
     + 'Host Model = zero investment with 10-20% monthly passive commission; '
     + '4) Urgency: this new price point will not last, now is the right time to act; '
-    + '5) CTA: reply to book a quick call.\\n\\n'
+    + '5) Closing paragraph: a compelling, energetic call-to-action that invites them to contact us to join a fast-growing industry. '
+    + 'Emphasize that the smart vending and health drink market is booming and now is the perfect time to get in. '
+    + 'End with an invitation to reply or reach out to take the first step. Make it inspiring and action-oriented.\\n\\n'
     + 'Tone: warm, enthusiastic, numbers-driven. This is a follow-up, not a cold email.\\n\\n'
     + 'IMPORTANT: Return ONLY plain text paragraphs separated by blank lines. No HTML, no subject line, no salutation, no signature.\\n\\n'
     + 'IMPORTANT: Return ONLY plain text paragraphs separated by blank lines. No HTML, no subject line, no salutation, no signature.\\n\\n'
     + 'BROCHURE: ' + BROCHURE + '\\n\\n'
-    + 'Sender: ' + senderName + ', ' + senderTitle + ' | ' + senderEmail + ' | ' + senderPhone + ' | shake-shop.com';
+    + 'Sender: ' + senderName + ', ' + senderTitle + ' | ' + senderEmail + ' | ' + senderPhone + ' | shake-shop.com'
+    + ' IMPORTANT: website is shake-shop.com NOT shake-shop.ca';
   try {
 
   var resp = await fetch('https://shakeshop-proxy.patrick-blais.workers.dev', {
